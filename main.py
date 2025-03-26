@@ -4,9 +4,9 @@ import whisper
 import time
 import numpy as np
 import tempfile
-from tts_handler import TTSHandler
-from gpt_handler import GPTHandler
-from config import DEFAULT_RECORDING_DURATION, SAMPLE_RATE, CHANNELS, ELEVEN_LABS_VOICE_ID
+from handlers.tts_handler import TTSHandler
+from handlers.gpt_handler import GPTHandler
+from utils.config import DEFAULT_RECORDING_DURATION, SAMPLE_RATE, CHANNELS, ELEVEN_LABS_VOICE_ID
 import os
 
 def list_audio_devices():

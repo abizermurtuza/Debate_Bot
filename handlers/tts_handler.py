@@ -1,7 +1,6 @@
 import pyttsx3
 from gtts import gTTS
 import os
-import math
 import wave
 import tempfile
 import pygame
@@ -10,7 +9,7 @@ import logging
 import threading
 from pydub import AudioSegment
 from eleven_labs import ElevenLabsHandler
-from typing import Optional, Dict, List
+from typing import Dict, List
 
 class TTSError(Exception):
     """Custom exception for TTS service failures"""

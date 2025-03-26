@@ -1,7 +1,5 @@
 import sounddevice as sd
 import soundfile as sf
-import numpy as np
-import time
 
 def test_audio_devices():
     """Test and display all audio devices."""
