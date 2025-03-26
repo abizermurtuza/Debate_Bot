@@ -1,0 +1,10 @@
+openai
+pygame
+pydub
+sounddevice
+soundfile
+whisper
+python-dotenv
+requests
+pyttsx3
+gTTS
