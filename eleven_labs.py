@@ -1,7 +1,7 @@
 import requests
 import tempfile
 import pygame
-from utils.config import ELEVEN_LABS_API_KEY
+from config import ELEVEN_LABS_API_KEY
 
 class ElevenLabsHandler:
     def __init__(self):

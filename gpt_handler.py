@@ -1,5 +1,5 @@
 from openai import OpenAI
-from utils.config import OPENAI_API_KEY, GPT_MODEL, SYSTEM_PROMPT
+from config import OPENAI_API_KEY, GPT_MODEL, SYSTEM_PROMPT
 
 class GPTHandler:
     def __init__(self):
