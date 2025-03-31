@@ -179,5 +179,5 @@ class TTSHandler:
                     raise TTSError("Invalid WAV file format")
 
     def cleanup_audio(self, audio_file):
-        from utils.temp_file_manager import temp_file_manager
+        from temp_file_manager import temp_file_manager
         temp_file_manager.remove_file(audio_file)
