@@ -18,7 +18,7 @@ class TTSError(Exception):
 class TTSHandler:
     def __init__(self):
         self.services = {
-            'elevenlabs': {'available': False, 'handler': None, 'max_chars': 2500},
+            'elevenlabs': {'available': False, 'handler': None, 'max_chars': 5000},
             'pyttsx3': {'available': False, 'handler': None, 'max_chars': 5000},
             'gtts': {'available': True, 'handler': None, 'max_chars': 5000}
         }
@@ -179,5 +179,5 @@ class TTSHandler:
                     raise TTSError("Invalid WAV file format")
 
     def cleanup_audio(self, audio_file):
-        from utils.temp_file_manager import temp_file_manager
+        from temp_file_manager import temp_file_manager
         temp_file_manager.remove_file(audio_file)
