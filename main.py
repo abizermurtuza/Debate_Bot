@@ -7,7 +7,7 @@ import tempfile
 from tts_handler import TTSHandler
 from gpt_handler import GPTHandler
 from config import DEFAULT_RECORDING_DURATION, SAMPLE_RATE, CHANNELS, ELEVEN_LABS_VOICE_ID
-import os
+import fasthtml  as fh
 
 def list_audio_devices():
     """List all available audio input devices."""

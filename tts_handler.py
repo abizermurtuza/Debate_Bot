@@ -18,7 +18,7 @@ class TTSError(Exception):
 class TTSHandler:
     def __init__(self):
         self.services = {
-            'elevenlabs': {'available': False, 'handler': None, 'max_chars': 2500},
+            'elevenlabs': {'available': False, 'handler': None, 'max_chars': 5000},
             'pyttsx3': {'available': False, 'handler': None, 'max_chars': 5000},
             'gtts': {'available': True, 'handler': None, 'max_chars': 5000}
         }
