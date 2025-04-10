@@ -7,6 +7,10 @@ import tempfile
 from tts_handler import TTSHandler
 from gpt_handler import GPTHandler
 from config import DEFAULT_RECORDING_DURATION, SAMPLE_RATE, CHANNELS, ELEVEN_LABS_VOICE_ID
+import threading
+import queue
+import sys
+import keyboard
 
 def list_audio_devices():
     """List all available audio input devices."""
@@ -58,6 +62,44 @@ def wait_for_user_confirmation():
         except ValueError:
             print("Please enter a valid number or press Enter to continue immediately.")
 
+def continuous_recording(fs=SAMPLE_RATE, channels=CHANNELS):
+    """Record audio continuously until user presses Enter to stop."""
+    q = queue.Queue()
+    recording = True
+    audio_data = []
+    
+    def callback(indata, frames, time, status):
+        if status:
+            print(f"Status: {status}")
+        q.put(indata.copy())
+    
+    def input_thread_func():
+        print("\nRecording... Press Enter to stop.")
+        input()  # Wait for Enter key
+        nonlocal recording
+        recording = False
+    
+    # Start input thread to watch for Enter key
+    input_thread = threading.Thread(target=input_thread_func)
+    input_thread.daemon = True
+    input_thread.start()
+    
+    # Start the recording stream
+    with sd.InputStream(samplerate=fs, channels=channels, callback=callback):
+        while recording:
+            try:
+                audio_data.append(q.get(timeout=0.5))
+            except queue.Empty:
+                continue
+            except KeyboardInterrupt:
+                break
+    
+    if not audio_data:
+        raise RuntimeError("No audio recorded")
+    
+    # Convert list of arrays to one array
+    return np.concatenate(audio_data), fs
+
 def debate_loop():
     gpt = GPTHandler()
     tts = TTSHandler()
@@ -87,15 +129,18 @@ def debate_loop():
 
     while True:
         try:
-            duration = int(input("Enter recording duration (or 0 to exit): "))
-            if duration == 0:
+            choice = input("Press Enter to start recording (or type 'exit' to quit): ")
+            if choice.lower() == "exit":
                 break
 
-            # Record and transcribe user input
-            audio, fs = record_audio(duration)
+            # Record and transcribe user input using continuous recording
+            print("Recording started. Press Enter when you're done speaking...")
+            audio, fs = continuous_recording()
             with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
                 wav_filename = tmp.name
             save_to_wav(audio, fs, wav_filename)
+            
+            print("Transcribing audio...")
             transcription = transcribe_audio(wav_filename)
             print("\nYou said:", transcription)
 
