@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Debate Assistant</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h1>AI Debate Assistant</h1>
+    <div id="setup">
+        <h2>Debate Setup</h2>
+        <label for="motion">Motion:</label>
+        <input type="text" id="motion" required>
+        <br>
+        <label for="position">Position:</label>
+        <select id="position" required>
+            <option value="for">For</option>
+            <option value="against">Against</option>
+        </select>
+        <br>
+        <button onclick="setDebateContext()">Start Debate</button>
+    </div>
+    <div id="debate" style="display: none;">
+        <h2>Debate</h2>
+        <div id="transcript"></div>
+        <button id="startRecording">Start Recording</button>
+        <button id="stopRecording" style="display: none;">Stop Recording</button>
+        <div id="response"></div>
+        <audio id="audioPlayer" controls style="display: none;"></audio>
+    </div>
+
+    <script>
+        let mediaRecorder;
+        let audioChunks = [];
+
+        function setDebateContext() {
+            const motion = $('#motion').val();
+            const position = $('#position').val();
+            
+            $.post('/set_debate_context', { motion: motion, position: position }, function(data) {
+                $('#setup').hide();
+                $('#debate').show();
+                if (data.text) {
+                    $('#transcript').append('<p><strong>AI:</strong> ' + data.text + '</p>');
+                    playAudio(data.audio);
+                }
+            });
+        }
+
+        $('#startRecording').click(function() {
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(stream => {
+                    mediaRecorder = new MediaRecorder(stream);
+                    mediaRecorder.start();
+
+                    audioChunks = [];
+                    mediaRecorder.addEventListener("dataavailable", event => {
+                        audioChunks.push(event.data);
+                    });
+
+                    $('#startRecording').hide();
+                    $('#stopRecording').show();
+                });
+        });
+
+        $('#stopRecording').click(function() {
+            mediaRecorder.stop();
+            $('#startRecording').show();
+            $('#stopRecording').hide();
+
+            mediaRecorder.addEventListener("stop", () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                const formData = new FormData();
+                formData.append("audio", audioBlob);
+
+                $.ajax({
+                    url: '/transcribe',
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(data) {
+                        $('#transcript').append('<p><strong>You:</strong> ' + data.transcription + '</p>');
+                        generateResponse(data.transcription);
+                    }
+                });
+            });
+        });
+
+        function generateResponse(transcription) {
+            $.post('/generate_response', { transcription: transcription }, function(data) {
+                $('#response').html('<p><strong>AI:</strong> ' + data.text + '</p>');
+                playAudio(data.audio);
+            });
+        }
+
+        function playAudio(audioFile) {
+            const audioPlayer = $('#audioPlayer');
+            audioPlayer.attr('src', '/audio/' + audioFile);
+            audioPlayer.show();
+            audioPlayer[0].play();
+        }
+    </script>
+</body>
+</html>

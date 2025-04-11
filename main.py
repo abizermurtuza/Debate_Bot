@@ -1,47 +1,12 @@
-import sounddevice as sd
-import soundfile as sf
+from audio_recorder import AudioRecorder
 import whisper
 import time
-import numpy as np
-import tempfile
 from tts_handler import TTSHandler
 from gpt_handler import GPTHandler
 from config import DEFAULT_RECORDING_DURATION, SAMPLE_RATE, CHANNELS, ELEVEN_LABS_VOICE_ID
-import threading
-import queue
 import sys
-import keyboard
 
-def list_audio_devices():
-    """List all available audio input devices."""
-    print("\nAvailable audio input devices:")
-    devices = sd.query_devices()
-    for i, device in enumerate(devices):
-        if device['max_input_channels'] > 0:
-            print(f"{i}: {device['name']}")
-    return devices
-
-def record_audio(duration=DEFAULT_RECORDING_DURATION, fs=SAMPLE_RATE, channels=CHANNELS):
-    try:
-        # Get default input device
-        device_info = sd.query_devices(kind='input')
-        if device_info is None:
-            raise RuntimeError("No input device found!")
-
-        print(f"Using input device: {device_info['name']}")
-        print(f"Recording for {duration} seconds...")
-        
-        audio = sd.rec(int(duration * fs), 
-                      samplerate=fs, 
-                      channels=channels, 
-                      dtype='float32',
-                      blocking=True)
-    except Exception as e:
-        raise RuntimeError(f"Recording failed: {str(e)}")
-    return audio, fs
-
-def save_to_wav(audio, fs, filename):
-    sf.write(filename, audio, fs)
+audio_recorder = AudioRecorder(SAMPLE_RATE, CHANNELS)
 
 def transcribe_audio(filename, model_name="base"):
     model = whisper.load_model(model_name)
@@ -61,44 +26,6 @@ def wait_for_user_confirmation():
             return
         except ValueError:
             print("Please enter a valid number or press Enter to continue immediately.")
-
-def continuous_recording(fs=SAMPLE_RATE, channels=CHANNELS):
-    """Record audio continuously until user presses Enter to stop."""
-    q = queue.Queue()
-    recording = True
-    audio_data = []
-    
-    def callback(indata, frames, time, status):
-        if status:
-            print(f"Status: {status}")
-        q.put(indata.copy())
-    
-    def input_thread_func():
-        print("\nRecording... Press Enter to stop.")
-        input()  # Wait for Enter key
-        nonlocal recording
-        recording = False
-    
-    # Start input thread to watch for Enter key
-    input_thread = threading.Thread(target=input_thread_func)
-    input_thread.daemon = True
-    input_thread.start()
-    
-    # Start the recording stream
-    with sd.InputStream(samplerate=fs, channels=channels, callback=callback):
-        while recording:
-            try:
-                audio_data.append(q.get(timeout=0.5))
-            except queue.Empty:
-                continue
-            except KeyboardInterrupt:
-                break
-    
-    if not audio_data:
-        raise RuntimeError("No audio recorded")
-    
-    # Convert list of arrays to one array
-    return np.concatenate(audio_data), fs
 
 def debate_loop():
     gpt = GPTHandler()
@@ -133,13 +60,9 @@ def debate_loop():
             if choice.lower() == "exit":
                 break
 
-            # Record and transcribe user input using continuous recording
-            print("Recording started. Press Enter when you're done speaking...")
-            audio, fs = continuous_recording()
-            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
-                wav_filename = tmp.name
-            save_to_wav(audio, fs, wav_filename)
-            
+            # Record and transcribe user input
+            wav_filename = audio_recorder.record_to_file()
+             
             print("Transcribing audio...")
             transcription = transcribe_audio(wav_filename)
             print("\nYou said:", transcription)
@@ -166,7 +89,7 @@ def debate_loop():
 if __name__ == "__main__":
     # Check audio devices at startup
     try:
-        devices = list_audio_devices()
+        devices = audio_recorder.list_audio_devices()
         if not any(device['max_input_channels'] > 0 for device in devices):
             print("Error: No audio input devices found!")
             exit(1)

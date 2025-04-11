@@ -23,7 +23,7 @@ class GPTHandler:
             prompt = f"As the {self.position} side, present your opening arguments for the motion: '{self.motion}'"
         elif not self.is_first_round:
             # Generate rebuttal
-            prompt = f"Provide a rebuttal to the following argument: {user_input}"
+            prompt = f"Provide counter arguments to the following argument: {user_input}"
         else:
             prompt = f"Continue the debate on the motion: '{self.motion}'"
 
