@@ -3,7 +3,7 @@ import whisper
 import time
 from tts_handler import TTSHandler
 from gpt_handler import GPTHandler
-from config import DEFAULT_RECORDING_DURATION, SAMPLE_RATE, CHANNELS, ELEVEN_LABS_VOICE_ID
+from config import SAMPLE_RATE, CHANNELS, ELEVEN_LABS_VOICE_ID
 import sys
 
 audio_recorder = AudioRecorder(SAMPLE_RATE, CHANNELS)
