@@ -5,25 +5,25 @@ class GPTHandler:
     def __init__(self):
         self.client = OpenAI(api_key=OPENAI_API_KEY)
         self.conversation_history = [{"role": "system", "content": SYSTEM_PROMPT}]
-        self.is_first_round = True
         self.position = None  # 'for' or 'against'
         self.motion = None
 
-    def generate_response(self, user_input, is_first_round=None, position=None, motion=None):
-        if is_first_round is not None:
-            self.is_first_round = is_first_round
+    def generate_response(self, user_input, round_number, position=None, motion=None, is_closing=False):
         if position:
             self.position = position
         if motion:
             self.motion = motion
 
         # Handle opening arguments or rebuttals
-        if user_input is None and self.is_first_round:
+        if user_input is None and round_number == 1:
             # Generate opening arguments
             prompt = f"As the {self.position} side, present your opening arguments for the motion: '{self.motion}'"
-        elif not self.is_first_round:
+        elif round_number >= 1:
             # Generate rebuttal
-            prompt = f"Provide counter arguments to the following argument: {user_input}"
+            if is_closing:
+                prompt = f"Provide a strong closing statement for the {self.position} side of the motion: '{self.motion}'. Summarize your main points and refute the opponent's arguments in around 800 words."
+            else:
+                prompt = f"Provide counter arguments to the following argument within 800 words: {user_input}"
         else:
             prompt = f"Continue the debate on the motion: '{self.motion}'"
 
@@ -43,10 +43,8 @@ class GPTHandler:
     def set_debate_context(self, position, motion):
         self.position = position
         self.motion = motion
-        self.is_first_round = True
 
     def reset_conversation(self):
         self.conversation_history = [{"role": "system", "content": SYSTEM_PROMPT}]
-        self.is_first_round = True
         self.position = None
         self.motion = None

@@ -30,13 +30,20 @@ def wait_for_user_confirmation():
 def debate_loop():
     gpt = GPTHandler()
     tts = TTSHandler()
-    first_round = True
-
+    round_count = 1
+    
     # Get debate context
     motion = input("Enter the debate motion: ")
     position = input("Enter your position (for/against): ").lower()
     while position not in ['for', 'against']:
         position = input("Please enter either 'for' or 'against': ").lower()
+    
+    # Get max rounds from user
+    try:
+        max_rounds = int(input("Enter number of rounds: "))
+    except ValueError:
+        max_rounds = 3  # Default to 3 rounds if invalid input
+        print(f"Invalid input. Using default of {max_rounds} rounds.")
 
     # Set up the debate context
     gpt.set_debate_context(position, motion)
@@ -46,15 +53,15 @@ def debate_loop():
         print("\nPresenting opening arguments...")
         opening_args = gpt.generate_response(
             None,
-            is_first_round=True
+            round_number=round_count
         )
         print("\nOpening Arguments:", opening_args)
         audio_file = tts.text_to_speech(opening_args, ELEVEN_LABS_VOICE_ID)
         tts.play_audio(audio_file)
         tts.cleanup_audio(audio_file)
-        first_round = False
+        round_count += 1
 
-    while True:
+    while round_count <= max_rounds:
         try:
             choice = input("Press Enter to start recording (or type 'exit' to quit): ")
             if choice.lower() == "exit":
@@ -71,18 +78,32 @@ def debate_loop():
             wait_for_user_confirmation()
 
             # Generate and speak response
-            rebuttal = gpt.generate_response(
-                transcription,
-                is_first_round=first_round
-            )
-            first_round = False
-            print("\nRebuttal:", rebuttal)
-            audio_file = tts.text_to_speech(rebuttal, ELEVEN_LABS_VOICE_ID)
-            tts.play_audio(audio_file)
+            if round_count == max_rounds:
+                print("\nGenerating closing statement...")
+                closing_statement = gpt.generate_response(
+                    transcription,
+                    round_number=round_count,
+                    is_closing=True
+                )
+                print("\nClosing Statement:", closing_statement)
+                audio_file = tts.text_to_speech(closing_statement, ELEVEN_LABS_VOICE_ID)
+                tts.play_audio(audio_file)
+                tts.cleanup_audio(audio_file)
+                tts.cleanup_audio(wav_filename)
+                break  # End the debate after the closing statement
+            else:
+                rebuttal = gpt.generate_response(
+                    transcription,
+                    round_number=round_count
+                )
+                print(f"\nRound {round_count} Rebuttal:", rebuttal)
+                audio_file = tts.text_to_speech(rebuttal, ELEVEN_LABS_VOICE_ID)
+                tts.play_audio(audio_file)
 
-            # Cleanup
-            tts.cleanup_audio(wav_filename)
-            tts.cleanup_audio(audio_file)
+                # Cleanup
+                tts.cleanup_audio(wav_filename)
+                tts.cleanup_audio(audio_file)
+                round_count += 1
         except Exception as e:
             print(f"Error: {e}")
 

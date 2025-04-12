@@ -5,14 +5,15 @@ from gpt_handler import GPTHandler
 import whisper
 import tempfile
 import os
-from config import SAMPLE_RATE, CHANNELS, ELEVEN_LABS_VOICE_ID
+from config import SAMPLE_RATE, CHANNELS, ELEVEN_LABS_VOICE_ID, MAX_ROUNDS
 
 app = Flask(__name__)
 
 audio_recorder = AudioRecorder(SAMPLE_RATE, CHANNELS)
 gpt = GPTHandler()
+round_count = 1
 tts = TTSHandler()
-whisper_model = whisper.load_model("base")
+whisper_model = whisper.load_model("small")
 
 @app.route('/')
 def index():
@@ -25,7 +26,7 @@ def set_debate_context():
     gpt.set_debate_context(position, motion)
     
     if position == 'for':
-        opening_arguments = gpt.generate_response(None, is_first_round=True)
+        opening_arguments = gpt.generate_response(None, round_number=round_count)
         audio_file = tts.text_to_speech(opening_arguments, ELEVEN_LABS_VOICE_ID)
         return jsonify({'text': opening_arguments, 'audio': audio_file})
     
@@ -45,10 +46,18 @@ def transcribe():
 
 @app.route('/generate_response', methods=['POST'])
 def generate_response():
+    global round_count
     transcription = request.form['transcription']
-    rebuttal = gpt.generate_response(transcription, is_first_round=False)
-    audio_file = tts.text_to_speech(rebuttal, ELEVEN_LABS_VOICE_ID)
-    return jsonify({'text': rebuttal, 'audio': audio_file})
+    round_count += 1
+    
+    if round_count >= MAX_ROUNDS:
+        closing_statement = gpt.generate_response(transcription, round_number=round_count, is_closing=True)
+        audio_file = tts.text_to_speech(closing_statement, ELEVEN_LABS_VOICE_ID)
+        return jsonify({'text': closing_statement, 'audio': audio_file, 'is_closing': True, 'round_count': round_count})
+    else:
+        rebuttal = gpt.generate_response(transcription, round_number=round_count)
+        audio_file = tts.text_to_speech(rebuttal, ELEVEN_LABS_VOICE_ID)
+        return jsonify({'text': rebuttal, 'audio': audio_file, 'is_closing': False, 'round_count': round_count})
 
 @app.route('/audio/<path:filename>')
 def serve_audio(filename):

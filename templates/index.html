@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Debate Assistant</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
     <h1>AI Debate Assistant</h1>
@@ -28,6 +29,10 @@
         <button id="stopRecording" style="display: none;">Stop Recording</button>
         <div id="response"></div>
         <audio id="audioPlayer" controls style="display: none;"></audio>
+    </div>
+    <div class="photo-row">
+        <img src="{{ url_for('static', filename='ua-logo-reversed-white.png') }}" class="left-img">
+        <img src="{{ url_for('static', filename='university-of-alberta-3-logo.png') }}" class="right-img">
     </div>
 
     <script>
